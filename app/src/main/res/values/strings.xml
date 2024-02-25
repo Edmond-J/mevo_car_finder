@@ -1,0 +1,7 @@
+<resources>
+    <string name="app_name">Mevo Car Finder</string>
+    <string name="content_my_location">my location</string>
+    <string name="content_layer">layer</string>
+    <string name="button_vehicle">Vehicle</string>
+    <string name="button_car_park">Car Park</string>
+</resources>
