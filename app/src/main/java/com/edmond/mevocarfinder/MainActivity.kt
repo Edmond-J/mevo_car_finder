@@ -5,6 +5,7 @@ import android.os.Bundle
 import android.util.Log
 import android.widget.ImageView
 import androidx.core.content.ContextCompat
+import com.mapbox.dash.sdk.DashNavigationFragment
 import com.mapbox.geojson.Point
 import com.mapbox.maps.MapView
 import com.mapbox.maps.Style
@@ -28,6 +29,12 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+//        if (savedInstanceState == null) {
+//            supportFragmentManager.beginTransaction()
+//                .replace(R.id.container, DashNavigationFragment.newInstance())
+//                .commitNow()
+//        }
+
         val mapView = findViewById<MapView>(R.id.mapView)
         val viewportOptions = FollowPuckViewportStateOptions.Builder()
             .pitch(0.0)

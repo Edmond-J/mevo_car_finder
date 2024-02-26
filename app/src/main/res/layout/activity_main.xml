@@ -19,8 +19,13 @@
         app:mapbox_locationComponentPuckBearing="heading"
         tools:layout_editor_absoluteX="0dp"
         tools:layout_editor_absoluteY="64dp">
-
     </com.mapbox.maps.MapView>
+
+    <androidx.fragment.app.FragmentContainerView
+        android:id="@+id/container"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:name="com.mapbox.dash.sdk.DashNavigationFragment" />
 
     <ImageView
         android:id="@+id/my_location"
