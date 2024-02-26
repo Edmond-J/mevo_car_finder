@@ -1,10 +1,16 @@
 package com.edmond.mevocarfinder
 
+import android.content.res.Resources
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.util.Log
+import com.mapbox.geojson.Point
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
+import java.io.BufferedInputStream
 import java.io.BufferedReader
+import java.io.IOException
 import java.io.InputStreamReader
 import java.net.HttpURLConnection
 import java.net.URL
@@ -42,22 +48,66 @@ class FetchData {
             return response
         }
 
-
-        fun parseJsonVehicle(jsonString: String?) {
+        fun parseJsonVehicle(jsonString: String?): MutableList<VehicleInfo> {
             val jsonObject = JSONObject(jsonString)
             val featureCollection = jsonObject.getJSONObject("data").getJSONArray("features")
+            val vehicleCollection: MutableList<VehicleInfo> = mutableListOf()
 //featureCollection.length()
             for (i in 0 until featureCollection.length()) {
                 val feature = featureCollection.getJSONObject(i)
                 val coordinates = feature.getJSONObject("geometry").getJSONArray("coordinates")
-                val latitude = coordinates.getString(0)
-                val longitude = coordinates.getString(1)
+                val longitude = coordinates.getString(0).toDouble()
+                val latitude = coordinates.getString(1).toDouble()
                 val iconUrl = feature.getJSONObject("properties").getString("iconUrl")
-                Log.d("edmond", latitude)
-                Log.d("edmond", longitude)
-                Log.d("edmond", iconUrl)
+                vehicleCollection.add(VehicleInfo(longitude, latitude, iconUrl))
+//                Log.d("edmond", latitude)
+            }
+            return vehicleCollection
+        }
 
+        fun parseJsonPolygon(jsonString: String?): List<List<Point>>{
+            val jsonObject = JSONObject(jsonString)
+            val dataObject = jsonObject.getJSONObject("data")
+            val geometryObject = dataObject.getJSONObject("geometry")
+            val coordinatesArray = geometryObject.getJSONArray("coordinates")
+            val polygons = mutableListOf<List<Point>>()
+            for (i in 1 until coordinatesArray.length()) {
+                val coordinateList = coordinatesArray.getJSONArray(i)
+                val points = mutableListOf<Point>()
+                for (j in 0 until coordinateList.length()) {
+                    val coordinatePair = coordinateList.getJSONArray(j)
+                    val longitude = coordinatePair.getDouble(0)
+                    val latitude = coordinatePair.getDouble(1)
+                    val point = Point.fromLngLat(longitude, latitude)
+                    points.add(point)
+                }
+                polygons.add(points)
+            }
+            return polygons
+        }
+
+        suspend fun loadImageBitmap(resource: Resources, urlString: String): Bitmap {
+           return withContext(Dispatchers.IO) {
+                var bitmap: Bitmap?=null
+                var urlConnection: HttpURLConnection? = null
+                try {
+                    val url = URL(urlString)
+                    urlConnection = url.openConnection() as HttpURLConnection
+                    urlConnection.connect()
+                    val inputStream = BufferedInputStream(urlConnection.inputStream)
+                    bitmap = if(inputStream!=null)
+                        BitmapFactory.decodeStream(inputStream)
+                    else
+                        BitmapFactory.decodeResource(resource, R.drawable.red_marker)
+                } catch (e: IOException) {
+                    e.printStackTrace()
+                } finally {
+                    urlConnection?.disconnect()
+                }
+                bitmap !!
             }
         }
+
+
     }
 }
