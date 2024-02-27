@@ -20,7 +20,10 @@ android {
     buildTypes {
         release {
             isMinifyEnabled = false
-            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
         }
     }
     compileOptions {
@@ -30,21 +33,21 @@ android {
     kotlinOptions {
         jvmTarget = "1.8"
     }
-    packagingOptions {
-        resources {
-            excludes += setOf(
-                // To compile the current version of UX Framework you need to add only these two lines:
-                "META-INF/DEPENDENCIES",
-                "META-INF/INDEX.LIST",
-            )
-        }
-    }
+//    packagingOptions {
+//        resources {
+//            excludes += setOf(
+//                // To compile the current version of UX Framework you need to add only these two lines:
+//                "META-INF/DEPENDENCIES",
+//                "META-INF/INDEX.LIST",
+//            )
+//        }
+//    }
 
 }
 
-configurations.all {
-    exclude(group = "com.google.guava", module = "listenablefuture")
-}
+//configurations.all {
+//    exclude(group = "com.google.guava", module = "listenablefuture")
+//}
 
 dependencies {
 
@@ -57,6 +60,7 @@ dependencies {
     androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")
 
     implementation("com.mapbox.maps:android:11.1.0")
-    implementation("com.mapbox.navigationux:android:1.0.0-beta.20")
+//    implementation("com.mapbox.navigationux:android:1.0.0-beta.20")
+
 }
 

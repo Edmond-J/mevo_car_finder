@@ -3,7 +3,6 @@ package com.edmond.mevocarfinder
 import android.content.res.Resources
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
-import android.util.Log
 import com.mapbox.geojson.Point
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -24,8 +23,8 @@ class FetchData {
                 withContext(Dispatchers.IO) {
                     val url = URL(urlString)
                     val connection = url.openConnection() as HttpURLConnection
-                    connection.connectTimeout = 10000 // 设置连接超时时间
-                    connection.readTimeout = 10000 // 设置读取超时时间
+                    connection.connectTimeout = 10000
+                    connection.readTimeout = 10000
                     val inputStream = connection.inputStream
                     val reader = BufferedReader(InputStreamReader(inputStream))
                     val stringBuffer = StringBuilder()
@@ -39,7 +38,7 @@ class FetchData {
                     response = stringBuffer.toString()
                     // 在协程中打印 Log 时需要在 Dispatchers.Main 上下文中执行
                     withContext(Dispatchers.Main) {
-                        Log.d("edmond", "31: $response")
+//                        Log.d("edmond", "42: $response")
                     }
                 }
             } catch (e: Exception) {
@@ -52,7 +51,6 @@ class FetchData {
             val jsonObject = JSONObject(jsonString)
             val featureCollection = jsonObject.getJSONObject("data").getJSONArray("features")
             val vehicleCollection: MutableList<VehicleInfo> = mutableListOf()
-//featureCollection.length()
             for (i in 0 until featureCollection.length()) {
                 val feature = featureCollection.getJSONObject(i)
                 val coordinates = feature.getJSONObject("geometry").getJSONArray("coordinates")
@@ -60,7 +58,6 @@ class FetchData {
                 val latitude = coordinates.getString(1).toDouble()
                 val iconUrl = feature.getJSONObject("properties").getString("iconUrl")
                 vehicleCollection.add(VehicleInfo(longitude, latitude, iconUrl))
-//                Log.d("edmond", latitude)
             }
             return vehicleCollection
         }
