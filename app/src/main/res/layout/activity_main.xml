@@ -18,7 +18,9 @@
         app:mapbox_locationComponentEnabled="true"
         app:mapbox_locationComponentPuckBearing="heading"
         tools:layout_editor_absoluteX="0dp"
-        tools:layout_editor_absoluteY="64dp"></com.mapbox.maps.MapView>
+        tools:layout_editor_absoluteY="64dp">
+
+    </com.mapbox.maps.MapView>
 
     <!--    <androidx.fragment.app.FragmentContainerView-->
     <!--        android:id="@+id/container"-->
@@ -31,7 +33,7 @@
         android:layout_width="64dp"
         android:layout_height="64dp"
         android:layout_marginBottom="72dp"
-        android:background="@drawable/circle_background"
+        android:background="@drawable/background_circle_white"
         android:clickable="true"
         android:contentDescription="@string/content_my_location"
         android:paddingHorizontal="12dp"
@@ -40,14 +42,14 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.9"
         app:layout_constraintStart_toStartOf="parent"
-        app:srcCompat="@drawable/my_location" />
+        app:srcCompat="@drawable/icon_my_location" />
 
     <ImageView
-        android:id="@+id/layer"
+        android:id="@+id/layers"
         android:layout_width="48dp"
         android:layout_height="48dp"
-        android:layout_marginTop="96dp"
-        android:background="@drawable/circle_background"
+        android:layout_marginTop="32dp"
+        android:background="@drawable/background_circle_white"
         android:clickable="true"
         android:contentDescription="@string/content_layer"
         android:paddingHorizontal="8dp"
@@ -56,7 +58,7 @@
         app:layout_constraintHorizontal_bias="0.9"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
-        app:srcCompat="@drawable/layers" />
+        app:srcCompat="@drawable/icon_layers" />
 
     <Button
         android:id="@+id/nearest_car_park"
@@ -69,6 +71,7 @@
         android:paddingRight="18dp"
         android:paddingBottom="4dp"
         android:text="@string/button_car_park"
+        android:visibility="invisible"
         app:iconPadding="4dp"
         app:layout_constraintStart_toEndOf="@+id/nearest_vehicle"
         app:layout_constraintTop_toTopOf="parent" />
@@ -88,5 +91,102 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/control_panel"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_alignParentBottom="true"
+        android:layout_marginTop="350dp"
+        android:background="@android:color/white"
+        android:visibility="invisible"
+        app:layout_constraintBottom_toBottomOf="@+id/mapView"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="@+id/mapView">
+
+        <ImageButton
+            android:id="@+id/close_button"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="20dp"
+            android:background="@drawable/background_circle_gray"
+            android:contentDescription="@string/button_close"
+            android:onClick="onCloseButtonClick"
+            android:paddingHorizontal="8dp"
+            android:paddingVertical="8dp"
+            android:src="@drawable/icon_close"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent" />
+
+        <ImageView
+            android:id="@+id/pic_satellite"
+            android:layout_width="72dp"
+            android:layout_height="72dp"
+            android:layout_marginStart="32dp"
+            android:layout_marginTop="32dp"
+            android:contentDescription="@string/map_style"
+            android:src="@drawable/satellite"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <ImageView
+            android:id="@+id/pic_street"
+            android:layout_width="72dp"
+            android:layout_height="72dp"
+            android:layout_marginTop="32dp"
+            android:contentDescription="@string/map_style"
+            android:src="@drawable/street"
+            app:layout_constraintEnd_toStartOf="@+id/pic_traffic"
+            app:layout_constraintStart_toEndOf="@+id/pic_satellite"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <ImageView
+            android:id="@+id/pic_traffic"
+            android:layout_width="72dp"
+            android:layout_height="72dp"
+            android:layout_marginTop="32dp"
+            android:layout_marginEnd="32dp"
+            android:contentDescription="@string/map_style"
+            android:src="@drawable/traffic"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <SeekBar
+            android:id="@+id/seekBar_pitch"
+            style="@android:style/Widget.DeviceDefault.SeekBar"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="32dp"
+            android:layout_marginEnd="32dp"
+            android:layout_marginBottom="32dp"
+            android:indeterminate="false"
+            app:layout_constraintBottom_toTopOf="@+id/close_button"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent" />
+
+        <TextView
+            android:id="@+id/textView2"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="32dp"
+            android:layout_marginBottom="24dp"
+            android:text="@string/seek_bar_title"
+            android:textSize="20sp"
+            app:layout_constraintBottom_toTopOf="@+id/seekBar_pitch"
+            app:layout_constraintStart_toStartOf="parent" />
+
+        <Switch
+            android:id="@+id/switch_dark"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="32dp"
+            android:layout_marginBottom="24dp"
+            android:text="Dark Mode"
+            android:textSize="20sp"
+            app:layout_constraintBottom_toTopOf="@+id/textView2"
+            app:layout_constraintStart_toStartOf="parent" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

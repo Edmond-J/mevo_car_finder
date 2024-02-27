@@ -4,4 +4,7 @@
     <string name="content_layer">layer</string>
     <string name="button_vehicle">Vehicle</string>
     <string name="button_car_park">Car Park</string>
+    <string name="button_close">Close</string>
+    <string name="map_style">Map Style</string>
+    <string name="seek_bar_title">View Angle</string>
 </resources>

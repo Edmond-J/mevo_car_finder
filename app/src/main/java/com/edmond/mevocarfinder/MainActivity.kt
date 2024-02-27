@@ -2,6 +2,7 @@ package com.edmond.mevocarfinder
 
 import android.os.Bundle
 import android.util.Log
+import android.view.View
 import android.widget.Button
 import android.widget.ImageView
 import androidx.appcompat.app.AppCompatActivity
@@ -48,6 +49,16 @@ class MainActivity : AppCompatActivity() {
 //                .replace(R.id.container, DashNavigationFragment.newInstance())
 //                .commitNow()
 //        }
+        val layerIcon: ImageView = findViewById(R.id.layers)
+        val controlPanel: androidx.constraintlayout.widget.ConstraintLayout =
+            findViewById(R.id.control_panel)
+        layerIcon.setOnClickListener {
+            if (controlPanel.visibility == View.VISIBLE) {
+                controlPanel.visibility = View.INVISIBLE
+            } else {
+                controlPanel.visibility = View.VISIBLE
+            }
+        }
         val findCarButton: Button = findViewById(R.id.nearest_vehicle)
         findCarButton.setOnClickListener {
             Log.d("edmond", "find car button")
@@ -98,10 +109,8 @@ class MainActivity : AppCompatActivity() {
             mapView.annotations.createPolygonAnnotationManager()
         val polygonAnnotationOptions = PolygonAnnotationOptions()
             .withPoints(points)
-            // Style the polygon that will be added to the map.
             .withFillColor(ContextCompat.getColor(this, R.color.accent))//#7AA0EB
             .withFillOpacity(0.4)
-        // Add the resulting polygon to the map.
         polygonAnnotationManager.create(polygonAnnotationOptions)
     }
 
@@ -152,7 +161,6 @@ class MainActivity : AppCompatActivity() {
             return
         }
         val distances = mutableListOf<Pair<VehicleInfo, Double>>()
-        // 计算所有车辆与用户位置的直线距离
         vehicleList?.forEach { vehicle ->
             val distance = vehicle.directDistance(userLongitude, userLatitude)
             distances.add(vehicle to distance)
@@ -162,7 +170,6 @@ class MainActivity : AppCompatActivity() {
             flyToDest(nearestVehicle.first.longitude, nearestVehicle.first.latitude)
         }
     }
-
 
     private fun flyToDest(longitude: Double, latitude: Double) {
         val cameraOptions = CameraOptions.Builder()
@@ -177,5 +184,10 @@ class MainActivity : AppCompatActivity() {
         mapView.mapboxMap.flyTo(cameraOptions, mapAnimationOptions { duration(6_000) })
     }
 
+    fun onCloseButtonClick(view: View) {
+        val controlPanel: androidx.constraintlayout.widget.ConstraintLayout =
+            findViewById(R.id.control_panel)
+        controlPanel.visibility = View.INVISIBLE
+    }
 
 }
