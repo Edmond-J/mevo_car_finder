@@ -11,8 +11,8 @@ and local storage for user settings. Due to network requests, coroutines were em
 network responses. Data is obtained on the coroutine, and the map markers are rendered on the main
 thread, ensuring a smoother user experience.   
 The source code includes navigation module-related code, although it's currently in experimental
-mode and not enabled due to compatibility conflicts with the map module.
-
+mode and not enabled due to compatibility conflicts with the map module.  
+[Download the apk for installation](https://github.com/Edmond-J/mevo_car_finder/releases/tag/v1.0.0)
 ## Snapshoot
 
  ![home](screenshot/ui-1.jpg) | ![team](screenshot/ui-3.jpg) | ![team](screenshot/ui-2.jpg) 
