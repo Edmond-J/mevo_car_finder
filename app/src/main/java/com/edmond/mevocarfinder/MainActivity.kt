@@ -1,12 +1,19 @@
 package com.edmond.mevocarfinder
 
+import android.content.Context
+import android.graphics.BitmapFactory
 import android.os.Bundle
 import android.util.Log
 import android.view.View
 import android.widget.Button
 import android.widget.ImageView
+import android.widget.Switch
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.lifecycleScope
+import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
 import com.mapbox.common.location.AccuracyLevel
 import com.mapbox.common.location.IntervalSettings
 import com.mapbox.common.location.LocationProviderRequest
@@ -27,19 +34,24 @@ import com.mapbox.maps.plugin.locationcomponent.createDefault2DPuck
 import com.mapbox.maps.plugin.locationcomponent.location
 import com.mapbox.maps.plugin.viewport.data.FollowPuckViewportStateOptions
 import com.mapbox.maps.plugin.viewport.viewport
-import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
-
+import kotlinx.coroutines.withContext
 
 class MainActivity : AppCompatActivity() {
-    private lateinit var mapView: MapView
     private var city = "wellington"
     private var vehicleInfoApi = "https://api.mevo.co.nz/public/vehicles/$city"
     private var boundaryInfoApi = "https://api.mevo.co.nz/public/parking/$city"
     private var vehicleList: MutableList<VehicleInfo>? = null
+    private var boundaryPoints: List<List<Point>>? = null
+    private lateinit var mapView: MapView
+    private lateinit var satelliteMode: ImageView
+    private lateinit var standardMode: ImageView
+    private lateinit var trafficMode: ImageView
+    private lateinit var darkModeSwitch: Switch
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -49,26 +61,33 @@ class MainActivity : AppCompatActivity() {
 //                .replace(R.id.container, DashNavigationFragment.newInstance())
 //                .commitNow()
 //        }
-        val layerIcon: ImageView = findViewById(R.id.layers)
-        val controlPanel: androidx.constraintlayout.widget.ConstraintLayout =
-            findViewById(R.id.control_panel)
-        layerIcon.setOnClickListener {
-            if (controlPanel.visibility == View.VISIBLE) {
-                controlPanel.visibility = View.INVISIBLE
+        mapView = findViewById(R.id.mapView)
+        satelliteMode = findViewById(R.id.pic_satellite)
+        standardMode = findViewById(R.id.pic_standard)
+        trafficMode = findViewById(R.id.pic_traffic)
+        darkModeSwitch = findViewById(R.id.switch_dark)
+        darkModeSwitch.setOnCheckedChangeListener { _, isChecked ->
+            if (isChecked) {
+                setImageBorder(trafficMode)
+                mapView.mapboxMap.loadStyle(Style.TRAFFIC_NIGHT)
             } else {
-                controlPanel.visibility = View.VISIBLE
+                mapView.mapboxMap.loadStyle(Style.TRAFFIC_DAY)
             }
         }
-        val findCarButton: Button = findViewById(R.id.nearest_vehicle)
-        findCarButton.setOnClickListener {
-            Log.d("edmond", "find car button")
-            val nearestCar = runBlocking { findMyLocation() }
-            Log.d("edmond", "56: nearestCar: ${nearestCar?.latitude()}")
+        val findNearestCarButton: Button = findViewById(R.id.nearest_vehicle)
+        findNearestCarButton.setOnClickListener {
+            runBlocking { getDeviceLocation() }
+            Log.d("edmond", "75: ${vehicleList?.size}")
         }
-        mapView = findViewById(R.id.mapView)
         val viewportOptions = FollowPuckViewportStateOptions.Builder()
             .pitch(0.0)
             .build()
+        val findMyLocationButton = findViewById<ImageView>(R.id.my_location)
+        findMyLocationButton.setOnClickListener {
+            mapView.viewport.transitionTo(
+                targetState = mapView.viewport.makeFollowPuckViewportState(viewportOptions)
+            )
+        }
         with(mapView) {
             location.locationPuck = createDefault2DPuck(withBearing = true)
             viewport.transitionTo(
@@ -78,29 +97,60 @@ class MainActivity : AppCompatActivity() {
                 //The immediate viewport transition moves the camera to the target state at once without using animations.
             )
             location.pulsingEnabled = true
-            mapboxMap.loadStyle(Style.STANDARD)
-        }
-        val myLocation = findViewById<ImageView>(R.id.my_location)
-        myLocation.setOnClickListener {
-            mapView.location.onStart()
-            mapView.viewport.transitionTo(
-                targetState = mapView.viewport.makeFollowPuckViewportState(viewportOptions)
-            )
-        }
-        GlobalScope.launch {
-            val vehicleRawData =
-                FetchData.fetchData(vehicleInfoApi)
-            vehicleList = FetchData.parseJsonVehicle(vehicleRawData)
-            if (vehicleList != null) {
-                Log.d("edmond", "59: " + vehicleList!!.size)
-                addVehicleToMap(vehicleList!!)
+            if (loadSetting("style_mode") == "satellite") {
+                mapboxMap.loadStyle(Style.SATELLITE)
+                setImageBorder(satelliteMode)
+            } else if (loadSetting("style_mode") == "traffic") {
+                mapboxMap.loadStyle(Style.TRAFFIC_DAY)
+                setImageBorder(trafficMode)
+            } else {
+                mapboxMap.loadStyle(Style.STANDARD)
+                setImageBorder(standardMode)
             }
         }
-        GlobalScope.launch {
-            val boundaryRawData = FetchData.fetchData(boundaryInfoApi)
-            val boundaryPoints: List<List<Point>> = FetchData.parseJsonPolygon(boundaryRawData)
-            Log.d("edmond", "71: " + boundaryPoints[0][0].longitude())
-            drawFlexZoneBoundary(boundaryPoints)
+        prepareMapAnnotation(savedInstanceState)
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        val gson = Gson()
+        val vehicleListString = gson.toJson(vehicleList)
+        outState.putString("vehicleList", vehicleListString)
+        val boundaryPointsString = gson.toJson(boundaryPoints)
+        outState.putString("boundaryPoints", boundaryPointsString)
+    }
+
+    private fun prepareMapAnnotation(savedInstanceState: Bundle?) {
+        val gson = Gson()
+        if (savedInstanceState?.getString("vehicleList") == null) {
+            lifecycleScope.launch {
+                val vehicleRawData =
+                    FetchData.fetchData(vehicleInfoApi)
+                vehicleList = FetchData.parseJsonVehicle(vehicleRawData)
+                withContext(Dispatchers.Main) {
+                    Log.d("edmond", "vehicle List: " + vehicleList!!.size)
+                    addVehicleToMap(vehicleList!!)
+                }
+            }
+        } else {
+            val savedJson = savedInstanceState.getString("vehicleList")
+            vehicleList =
+                gson.fromJson(savedJson, object : TypeToken<MutableList<VehicleInfo>>() {}.type)
+            Log.d("edmond", "vehicle List(from savedInstanceState)")
+        }
+        if (savedInstanceState?.getString("boundaryPoints") == null) {
+            lifecycleScope.launch {
+                val boundaryRawData = FetchData.fetchData(boundaryInfoApi)
+                boundaryPoints = FetchData.parseJsonPolygon(boundaryRawData)
+                withContext(Dispatchers.Main) {
+                    drawFlexZoneBoundary(boundaryPoints!!)
+                }
+            }
+        } else {
+            val savedJson = savedInstanceState.getString("boundaryPoints")
+            boundaryPoints =
+                gson.fromJson(savedJson, object : TypeToken<List<List<Point>>>() {}.type)
+            Log.d("edmond", "parking List(from savedInstanceState)")
         }
     }
 
@@ -114,10 +164,12 @@ class MainActivity : AppCompatActivity() {
         polygonAnnotationManager.create(polygonAnnotationOptions)
     }
 
-    private suspend fun addVehicleToMap(vehicles: List<VehicleInfo>) {
+    private fun addVehicleToMap(vehicles: List<VehicleInfo>) {
         for (vehicle in vehicles) {
             val point = Point.fromLngLat(vehicle.longitude, vehicle.latitude)
-            val bitmap = FetchData.loadImageBitmap(resources, vehicle.iconUrl)
+//            val bitmap = vehicle.bitmap
+            val bitmap =
+                vehicle.bitmap ?: BitmapFactory.decodeResource(resources, R.drawable.red_marker)
             val pointAnnotationManager = mapView.annotations.createPointAnnotationManager()
             val pointAnnotationOptions: PointAnnotationOptions = PointAnnotationOptions()
                 .withPoint(point)
@@ -127,7 +179,7 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private suspend fun findMyLocation(): Point? = coroutineScope {
+    private suspend fun getDeviceLocation(): Point? = coroutineScope {
         val locationService: LocationService = LocationServiceFactory.getOrCreate()
         val resultDeferred = async {
             val request = LocationProviderRequest.Builder()
@@ -143,7 +195,7 @@ class MainActivity : AppCompatActivity() {
         }
         val locationProvider = resultDeferred.await()
         var myLocation: Point? = null
-        val lastLocationCancelable = locationProvider?.getLastLocation { re ->
+        locationProvider?.getLastLocation { re ->
             if (re != null) {
                 myLocation = Point.fromLngLat(re.longitude, re.latitude)
                 Log.d("edmond", "Latitude: ${re.latitude}, Longitude: ${re.longitude}")
@@ -160,12 +212,12 @@ class MainActivity : AppCompatActivity() {
         if (userLatitude == null || userLongitude == null) {
             return
         }
-        val distances = mutableListOf<Pair<VehicleInfo, Double>>()
+        val distanceMap = mutableListOf<Pair<VehicleInfo, Double>>()
         vehicleList?.forEach { vehicle ->
             val distance = vehicle.directDistance(userLongitude, userLatitude)
-            distances.add(vehicle to distance)
+            distanceMap.add(vehicle to distance)
         }
-        val nearestVehicle = distances.minByOrNull { it.second }
+        val nearestVehicle = distanceMap.minByOrNull { it.second }
         if (nearestVehicle != null) {
             flyToDest(nearestVehicle.first.longitude, nearestVehicle.first.latitude)
         }
@@ -184,10 +236,65 @@ class MainActivity : AppCompatActivity() {
         mapView.mapboxMap.flyTo(cameraOptions, mapAnimationOptions { duration(6_000) })
     }
 
+    fun onLayerButtonClick(view: View) {
+        val controlPanel: androidx.constraintlayout.widget.ConstraintLayout =
+            findViewById(R.id.control_panel)
+        if (controlPanel.visibility == View.VISIBLE) {
+            controlPanel.visibility = View.INVISIBLE
+        } else {
+            controlPanel.visibility = View.VISIBLE
+        }
+    }
+
     fun onCloseButtonClick(view: View) {
         val controlPanel: androidx.constraintlayout.widget.ConstraintLayout =
             findViewById(R.id.control_panel)
         controlPanel.visibility = View.INVISIBLE
+    }
+
+    fun onSatelliteModeClick(view: View) {
+        darkModeSwitch.isChecked = false
+        mapView.mapboxMap.loadStyle(Style.SATELLITE)
+        setImageBorder(satelliteMode)
+        saveSetting("style_mode", "satellite")
+        Toast.makeText(this@MainActivity, "Satellite Mode", Toast.LENGTH_SHORT).show()
+    }
+
+    fun onStandardModeClick(view: View) {
+        darkModeSwitch.isChecked = false
+        mapView.mapboxMap.loadStyle(Style.STANDARD)
+        setImageBorder(standardMode)
+        saveSetting("style_mode", "standard")
+        Toast.makeText(this, "Standard Mode", Toast.LENGTH_SHORT).show()
+    }
+
+    fun onTrafficModeClick(view: View) {
+        darkModeSwitch.isChecked = false
+        mapView.mapboxMap.loadStyle(Style.TRAFFIC_DAY)
+        setImageBorder(trafficMode)
+        saveSetting("style_mode", "traffic")
+        Toast.makeText(this, "Traffic Mode", Toast.LENGTH_SHORT).show()
+    }
+
+    private fun setImageBorder(imageView: ImageView) {
+        satelliteMode.setBackgroundResource(0)
+        standardMode.setBackgroundResource(0)
+        trafficMode.setBackgroundResource(0)
+        imageView.setBackgroundResource(R.drawable.border_round_corner_primary)
+    }
+
+    private fun saveSetting(key: String, value: String) {
+        val sharedPreferences =
+            applicationContext.getSharedPreferences("MySettings", Context.MODE_PRIVATE)
+        val editor = sharedPreferences.edit()
+        editor.putString(key, value)
+        editor.apply()
+    }
+
+    private fun loadSetting(key: String): String? {
+        val sharedPreferences =
+            applicationContext.getSharedPreferences("MySettings", Context.MODE_PRIVATE)
+        return sharedPreferences.getString(key, null)
     }
 
 }

@@ -10,15 +10,17 @@
         android:id="@+id/mapView"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
         app:mapbox_cameraBearing="0.0"
         app:mapbox_cameraPitch="0.0"
         app:mapbox_cameraTargetLat="-41.2918"
         app:mapbox_cameraTargetLng="174.7842"
         app:mapbox_cameraZoom="5.0"
         app:mapbox_locationComponentEnabled="true"
-        app:mapbox_locationComponentPuckBearing="heading"
-        tools:layout_editor_absoluteX="0dp"
-        tools:layout_editor_absoluteY="64dp">
+        app:mapbox_locationComponentPuckBearing="heading">
 
     </com.mapbox.maps.MapView>
 
@@ -48,10 +50,11 @@
         android:id="@+id/layers"
         android:layout_width="48dp"
         android:layout_height="48dp"
-        android:layout_marginTop="32dp"
+        android:layout_marginTop="96dp"
         android:background="@drawable/background_circle_white"
         android:clickable="true"
         android:contentDescription="@string/content_layer"
+        android:onClick="onLayerButtonClick"
         android:paddingHorizontal="8dp"
         android:paddingVertical="8dp"
         app:layout_constraintEnd_toEndOf="parent"
@@ -91,102 +94,6 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
-    <androidx.constraintlayout.widget.ConstraintLayout
-        android:id="@+id/control_panel"
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_alignParentBottom="true"
-        android:layout_marginTop="350dp"
-        android:background="@android:color/white"
-        android:visibility="invisible"
-        app:layout_constraintBottom_toBottomOf="@+id/mapView"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="@+id/mapView">
-
-        <ImageButton
-            android:id="@+id/close_button"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="20dp"
-            android:background="@drawable/background_circle_gray"
-            android:contentDescription="@string/button_close"
-            android:onClick="onCloseButtonClick"
-            android:paddingHorizontal="8dp"
-            android:paddingVertical="8dp"
-            android:src="@drawable/icon_close"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent" />
-
-        <ImageView
-            android:id="@+id/pic_satellite"
-            android:layout_width="72dp"
-            android:layout_height="72dp"
-            android:layout_marginStart="32dp"
-            android:layout_marginTop="32dp"
-            android:contentDescription="@string/map_style"
-            android:src="@drawable/satellite"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent" />
-
-        <ImageView
-            android:id="@+id/pic_street"
-            android:layout_width="72dp"
-            android:layout_height="72dp"
-            android:layout_marginTop="32dp"
-            android:contentDescription="@string/map_style"
-            android:src="@drawable/street"
-            app:layout_constraintEnd_toStartOf="@+id/pic_traffic"
-            app:layout_constraintStart_toEndOf="@+id/pic_satellite"
-            app:layout_constraintTop_toTopOf="parent" />
-
-        <ImageView
-            android:id="@+id/pic_traffic"
-            android:layout_width="72dp"
-            android:layout_height="72dp"
-            android:layout_marginTop="32dp"
-            android:layout_marginEnd="32dp"
-            android:contentDescription="@string/map_style"
-            android:src="@drawable/traffic"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toTopOf="parent" />
-
-        <SeekBar
-            android:id="@+id/seekBar_pitch"
-            style="@android:style/Widget.DeviceDefault.SeekBar"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="32dp"
-            android:layout_marginEnd="32dp"
-            android:layout_marginBottom="32dp"
-            android:indeterminate="false"
-            app:layout_constraintBottom_toTopOf="@+id/close_button"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent" />
-
-        <TextView
-            android:id="@+id/textView2"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="32dp"
-            android:layout_marginBottom="24dp"
-            android:text="@string/seek_bar_title"
-            android:textSize="20sp"
-            app:layout_constraintBottom_toTopOf="@+id/seekBar_pitch"
-            app:layout_constraintStart_toStartOf="parent" />
-
-        <Switch
-            android:id="@+id/switch_dark"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="32dp"
-            android:layout_marginBottom="24dp"
-            android:text="Dark Mode"
-            android:textSize="20sp"
-            app:layout_constraintBottom_toTopOf="@+id/textView2"
-            app:layout_constraintStart_toStartOf="parent" />
-
-    </androidx.constraintlayout.widget.ConstraintLayout>
+    <include layout="@layout/control_panel" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

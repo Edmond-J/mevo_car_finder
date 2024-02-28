@@ -6,5 +6,8 @@
     <string name="button_car_park">Car Park</string>
     <string name="button_close">Close</string>
     <string name="map_style">Map Style</string>
+    <string name="map_sate">Satellite</string>
+    <string name="map_stan">Standard</string>
+    <string name="map_traf">Traffic</string>
     <string name="seek_bar_title">View Angle</string>
 </resources>

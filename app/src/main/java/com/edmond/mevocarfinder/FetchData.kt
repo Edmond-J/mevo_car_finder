@@ -1,6 +1,5 @@
 package com.edmond.mevocarfinder
 
-import android.content.res.Resources
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import com.mapbox.geojson.Point
@@ -47,18 +46,19 @@ class FetchData {
             return response
         }
 
-        fun parseJsonVehicle(jsonString: String?): MutableList<VehicleInfo> {
-            val jsonObject = JSONObject(jsonString)
-            val featureCollection = jsonObject.getJSONObject("data").getJSONArray("features")
-            val vehicleCollection: MutableList<VehicleInfo> = mutableListOf()
-            for (i in 0 until featureCollection.length()) {
-                val feature = featureCollection.getJSONObject(i)
-                val coordinates = feature.getJSONObject("geometry").getJSONArray("coordinates")
-                val longitude = coordinates.getString(0).toDouble()
-                val latitude = coordinates.getString(1).toDouble()
-                val iconUrl = feature.getJSONObject("properties").getString("iconUrl")
-                vehicleCollection.add(VehicleInfo(longitude, latitude, iconUrl))
-            }
+       suspend fun parseJsonVehicle(jsonString: String?): MutableList<VehicleInfo> {
+           val jsonObject = JSONObject(jsonString)
+           val featureCollection = jsonObject.getJSONObject("data").getJSONArray("features")
+           val vehicleCollection: MutableList<VehicleInfo> = mutableListOf()
+           for (i in 0 until featureCollection.length()) {
+               val feature = featureCollection.getJSONObject(i)
+               val coordinates = feature.getJSONObject("geometry").getJSONArray("coordinates")
+               val longitude = coordinates.getString(0).toDouble()
+               val latitude = coordinates.getString(1).toDouble()
+               val iconUrl = feature.getJSONObject("properties").getString("iconUrl")
+               val bitmap = loadImageBitmap(iconUrl)
+               vehicleCollection.add(VehicleInfo(longitude, latitude, iconUrl, bitmap))
+           }
             return vehicleCollection
         }
 
@@ -83,19 +83,17 @@ class FetchData {
             return polygons
         }
 
-        suspend fun loadImageBitmap(resource: Resources, urlString: String): Bitmap {
-           return withContext(Dispatchers.IO) {
-                var bitmap: Bitmap?=null
+        private suspend fun loadImageBitmap(urlString: String): Bitmap {
+            return withContext(Dispatchers.IO) {
+                var bitmap: Bitmap? = null
                 var urlConnection: HttpURLConnection? = null
                 try {
                     val url = URL(urlString)
                     urlConnection = url.openConnection() as HttpURLConnection
                     urlConnection.connect()
                     val inputStream = BufferedInputStream(urlConnection.inputStream)
-                    bitmap = if(inputStream!=null)
-                        BitmapFactory.decodeStream(inputStream)
-                    else
-                        BitmapFactory.decodeResource(resource, R.drawable.red_marker)
+                    bitmap = BitmapFactory.decodeStream(inputStream)
+//                        BitmapFactory.decodeResource(resource, R.drawable.red_marker)
                 } catch (e: IOException) {
                     e.printStackTrace()
                 } finally {
