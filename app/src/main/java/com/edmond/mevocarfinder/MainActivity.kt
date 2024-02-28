@@ -14,6 +14,8 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
+import com.mapbox.android.core.permissions.PermissionsListener
+import com.mapbox.android.core.permissions.PermissionsManager
 import com.mapbox.common.location.AccuracyLevel
 import com.mapbox.common.location.IntervalSettings
 import com.mapbox.common.location.LocationProviderRequest
@@ -41,10 +43,9 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 
-class MainActivity : AppCompatActivity() {
-    private var city = "wellington"
-    private var vehicleInfoApi = "https://api.mevo.co.nz/public/vehicles/$city"
-    private var boundaryInfoApi = "https://api.mevo.co.nz/public/parking/$city"
+class MainActivity : AppCompatActivity(), PermissionsListener {
+    private var vehicleInfoApi = "https://api.mevo.co.nz/public/vehicles/wellington"
+    private var boundaryInfoApi = "https://api.mevo.co.nz/public/parking/wellington"
     private var vehicleList: MutableList<VehicleInfo>? = null
     private var boundaryPoints: List<List<Point>>? = null
     private lateinit var mapView: MapView
@@ -52,15 +53,40 @@ class MainActivity : AppCompatActivity() {
     private lateinit var standardMode: ImageView
     private lateinit var trafficMode: ImageView
     private lateinit var darkModeSwitch: Switch
+    private lateinit var permissionsManager: PermissionsManager
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+        initializeView()
+        checkPermission()
+        prepareMapAnnotation(savedInstanceState)
 //        if (savedInstanceState == null) {
 //            supportFragmentManager.beginTransaction()
 //                .replace(R.id.container, DashNavigationFragment.newInstance())
 //                .commitNow()
 //        }
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        val gson = Gson()
+        val vehicleListString = gson.toJson(vehicleList)
+        outState.putString("vehicleList", vehicleListString)
+        val boundaryPointsString = gson.toJson(boundaryPoints)
+        outState.putString("boundaryPoints", boundaryPointsString)
+    }
+
+    private fun checkPermission() {
+        if (!PermissionsManager.areLocationPermissionsGranted(applicationContext)) {
+            permissionsManager = PermissionsManager(this)
+            permissionsManager.requestLocationPermissions(this)
+        } else {
+            onPermissionResult(true)
+        }
+    }
+
+    private fun initializeView() {
         mapView = findViewById(R.id.mapView)
         satelliteMode = findViewById(R.id.pic_satellite)
         standardMode = findViewById(R.id.pic_standard)
@@ -77,47 +103,27 @@ class MainActivity : AppCompatActivity() {
         val findNearestCarButton: Button = findViewById(R.id.nearest_vehicle)
         findNearestCarButton.setOnClickListener {
             runBlocking { getDeviceLocation() }
-            Log.d("edmond", "75: ${vehicleList?.size}")
+            Log.d("edmond", "108: ${vehicleList?.size}")
         }
-        val viewportOptions = FollowPuckViewportStateOptions.Builder()
-            .pitch(0.0)
-            .build()
         val findMyLocationButton = findViewById<ImageView>(R.id.my_location)
         findMyLocationButton.setOnClickListener {
+            val viewportOptions = FollowPuckViewportStateOptions.Builder()
+                .pitch(0.0)
+                .build()
             mapView.viewport.transitionTo(
                 targetState = mapView.viewport.makeFollowPuckViewportState(viewportOptions)
             )
         }
-        with(mapView) {
-            location.locationPuck = createDefault2DPuck(withBearing = true)
-            viewport.transitionTo(
-                targetState = viewport.makeFollowPuckViewportState(viewportOptions),
-                //This state syncs the map camera with the location puck.
-                transition = viewport.makeImmediateViewportTransition()
-                //The immediate viewport transition moves the camera to the target state at once without using animations.
-            )
-            location.pulsingEnabled = true
-            if (loadSetting("style_mode") == "satellite") {
-                mapboxMap.loadStyle(Style.SATELLITE)
-                setImageBorder(satelliteMode)
-            } else if (loadSetting("style_mode") == "traffic") {
-                mapboxMap.loadStyle(Style.TRAFFIC_DAY)
-                setImageBorder(trafficMode)
-            } else {
-                mapboxMap.loadStyle(Style.STANDARD)
-                setImageBorder(standardMode)
-            }
+        if (loadSetting("style_mode") == "satellite") {
+            mapView.mapboxMap.loadStyle(Style.SATELLITE)
+            setImageBorder(satelliteMode)
+        } else if (loadSetting("style_mode") == "traffic") {
+            mapView.mapboxMap.loadStyle(Style.TRAFFIC_DAY)
+            setImageBorder(trafficMode)
+        } else {
+            mapView.mapboxMap.loadStyle(Style.STANDARD)
+            setImageBorder(standardMode)
         }
-        prepareMapAnnotation(savedInstanceState)
-    }
-
-    override fun onSaveInstanceState(outState: Bundle) {
-        super.onSaveInstanceState(outState)
-        val gson = Gson()
-        val vehicleListString = gson.toJson(vehicleList)
-        outState.putString("vehicleList", vehicleListString)
-        val boundaryPointsString = gson.toJson(boundaryPoints)
-        outState.putString("boundaryPoints", boundaryPointsString)
     }
 
     private fun prepareMapAnnotation(savedInstanceState: Bundle?) {
@@ -295,6 +301,33 @@ class MainActivity : AppCompatActivity() {
         val sharedPreferences =
             applicationContext.getSharedPreferences("MySettings", Context.MODE_PRIVATE)
         return sharedPreferences.getString(key, null)
+    }
+
+    override fun onExplanationNeeded(permissionsToExplain: List<String>) {
+    }
+
+    override fun onPermissionResult(granted: Boolean) {
+        Log.d("edmond", "permission granted")
+        with(mapView) {
+            val viewportOptions = FollowPuckViewportStateOptions.Builder()
+                .pitch(0.0)
+                .build()
+            location.locationPuck = createDefault2DPuck(withBearing = true)
+            viewport.transitionTo(
+                targetState = viewport.makeFollowPuckViewportState(viewportOptions),
+//                transition = viewport.makeImmediateViewportTransition()
+            )
+            location.pulsingEnabled = true
+        }
+    }
+
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<String>,
+        grantResults: IntArray
+    ) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        permissionsManager.onRequestPermissionsResult(requestCode, permissions, grantResults)
     }
 
 }

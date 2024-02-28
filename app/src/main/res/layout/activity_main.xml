@@ -18,7 +18,7 @@
         app:mapbox_cameraPitch="0.0"
         app:mapbox_cameraTargetLat="-41.2918"
         app:mapbox_cameraTargetLng="174.7842"
-        app:mapbox_cameraZoom="5.0"
+        app:mapbox_cameraZoom="8.0"
         app:mapbox_locationComponentEnabled="true"
         app:mapbox_locationComponentPuckBearing="heading">
 
